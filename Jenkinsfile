@@ -16,6 +16,9 @@ pipeline {
 
                     echo "Copying server .env file..."
                     cp /home/ubuntu/FSV-Capital/.env "$WORKSPACE/.env"
+                        
+                    echo "Stopping old containers..."
+                    docker compose down
 
                     echo "Building Docker images..."
                     docker compose build
