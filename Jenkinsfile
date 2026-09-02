@@ -39,7 +39,7 @@ pipeline {
 
                     HEALTH_CHECK_FAILED=1
 
-                    for i in {1..30}; do
+                    for i in $(seq 1 30); do
                         echo "Health check attempt $i/30..."
 
                         if curl -fs http://localhost/health; then
@@ -51,23 +51,23 @@ pipeline {
                             break
                         fi
 
-                        echo "Application is not ready yet..."
+                        echo "Application is not ready yet. Waiting 5 seconds..."
                         sleep 5
                     done
 
                     if [ "$HEALTH_CHECK_FAILED" -eq 1 ]; then
                         echo "========================================"
-                        echo "Health check failed!"
+                        echo "Health check failed after 150 seconds!"
                         echo "========================================"
 
                         echo "Container status:"
                         docker compose ps
 
                         echo "Backend logs:"
-                        docker logs --tail 100 fsv-backend
+                        docker logs --tail 100 fsv-backend || true
 
                         echo "Nginx logs:"
-                        docker logs --tail 50 fsv-nginx
+                        docker logs --tail 50 fsv-nginx || true
 
                         exit 1
                     fi
@@ -90,6 +90,8 @@ pipeline {
         }
     }
 }
+
+
 
 
 
