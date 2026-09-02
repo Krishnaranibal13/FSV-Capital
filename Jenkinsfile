@@ -11,14 +11,16 @@ pipeline {
 
                     echo "Starting FSV-Capital deployment..."
 
-                    # Go to Jenkins workspace
                     cd "$WORKSPACE"
 
                     echo "Copying server .env file..."
                     cp /home/ubuntu/FSV-Capital/.env "$WORKSPACE/.env"
-                        
-                    echo "Stopping old containers..."
-                    docker compose down
+
+                    echo "Removing old FSV containers..."
+                    docker rm -f fsv-frontend fsv-backend fsv-mysql fsv-nginx 2>/dev/null || true
+
+                    echo "Stopping Compose services..."
+                    docker compose down --remove-orphans 2>/dev/null || true
 
                     echo "Building Docker images..."
                     docker compose build
@@ -29,8 +31,10 @@ pipeline {
                     echo "Checking container status..."
                     docker compose ps
 
-                    echo "Checking application health..."
+                    echo "Waiting for application..."
                     sleep 10
+
+                    echo "Checking application health..."
                     curl -f http://localhost/health
 
                     echo "Deployment completed successfully!"
@@ -49,5 +53,7 @@ pipeline {
         }
     }
 }
+
+
 
 
