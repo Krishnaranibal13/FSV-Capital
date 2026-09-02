@@ -9,7 +9,9 @@ pipeline {
                 sh '''
                     set -e
 
-                    echo "Starting FSV-Capital deployment..."
+                    echo "========================================"
+                    echo "Starting FSV-Capital deployment"
+                    echo "========================================"
 
                     cd "$WORKSPACE"
 
@@ -19,25 +21,60 @@ pipeline {
                     echo "Removing old FSV containers..."
                     docker rm -f fsv-frontend fsv-backend fsv-mysql fsv-nginx 2>/dev/null || true
 
-                    echo "Stopping Compose services..."
+                    echo "Stopping old Compose services..."
                     docker compose down --remove-orphans 2>/dev/null || true
 
                     echo "Building Docker images..."
                     docker compose build
 
-                    echo "Starting containers..."
+                    echo "Starting Docker containers..."
                     docker compose up -d
 
                     echo "Checking container status..."
                     docker compose ps
 
-                    echo "Waiting for application..."
-                    sleep 10
+                    echo "========================================"
+                    echo "Waiting for application health..."
+                    echo "========================================"
 
-                    echo "Checking application health..."
-                    curl -f http://localhost/health
+                    HEALTH_CHECK_FAILED=1
 
+                    for i in {1..30}; do
+                        echo "Health check attempt $i/30..."
+
+                        if curl -fs http://localhost/health; then
+                            echo ""
+                            echo "========================================"
+                            echo "Application is healthy!"
+                            echo "========================================"
+                            HEALTH_CHECK_FAILED=0
+                            break
+                        fi
+
+                        echo "Application is not ready yet..."
+                        sleep 5
+                    done
+
+                    if [ "$HEALTH_CHECK_FAILED" -eq 1 ]; then
+                        echo "========================================"
+                        echo "Health check failed!"
+                        echo "========================================"
+
+                        echo "Container status:"
+                        docker compose ps
+
+                        echo "Backend logs:"
+                        docker logs --tail 100 fsv-backend
+
+                        echo "Nginx logs:"
+                        docker logs --tail 50 fsv-nginx
+
+                        exit 1
+                    fi
+
+                    echo "========================================"
                     echo "Deployment completed successfully!"
+                    echo "========================================"
                 '''
             }
         }
@@ -53,6 +90,8 @@ pipeline {
         }
     }
 }
+
+
 
 
 
