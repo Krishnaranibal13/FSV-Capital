@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
 
@@ -6,19 +7,30 @@ pipeline {
         stage('Deploy') {
             steps {
                 sh '''
-                    cd /home/ubuntu/FSV-Capital
+                    set -e
 
-                    echo "Pulling latest code..."
-                    git pull origin master
+                    echo "Starting FSV-Capital deployment..."
+
+                    # Go to Jenkins workspace
+                    cd "$WORKSPACE"
+
+                    echo "Copying server .env file..."
+                    cp /home/ubuntu/FSV-Capital/.env "$WORKSPACE/.env"
 
                     echo "Building Docker images..."
                     docker compose build
 
-                    echo "Starting application..."
+                    echo "Starting containers..."
                     docker compose up -d
 
-                    echo "Checking containers..."
+                    echo "Checking container status..."
                     docker compose ps
+
+                    echo "Checking application health..."
+                    sleep 10
+                    curl -f http://localhost/health
+
+                    echo "Deployment completed successfully!"
                 '''
             }
         }
@@ -30,7 +42,9 @@ pipeline {
         }
 
         failure {
-            echo 'Deployment failed. Check the Jenkins console output.'
+            echo 'FSV-Capital deployment failed. Check the console output.'
         }
     }
 }
+
+
