@@ -3,25 +3,21 @@ pipeline {
 
     stages {
 
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
         stage('Deploy') {
             steps {
                 sh '''
-                    docker compose down
-                    docker compose build
-                    docker compose up -d
-                '''
-            }
-        }
+                    cd /home/ubuntu/FSV-Capital
 
-        stage('Verify') {
-            steps {
-                sh '''
+                    echo "Pulling latest code..."
+                    git pull origin master
+
+                    echo "Building Docker images..."
+                    docker compose build
+
+                    echo "Starting application..."
+                    docker compose up -d
+
+                    echo "Checking containers..."
                     docker compose ps
                 '''
             }
@@ -30,11 +26,11 @@ pipeline {
 
     post {
         success {
-            echo 'FSV-Capital application deployed successfully!'
+            echo 'FSV-Capital deployed successfully!'
         }
 
         failure {
-            echo 'Deployment failed. Check Jenkins logs.'
+            echo 'Deployment failed. Check the Jenkins console output.'
         }
     }
 }
